@@ -47,7 +47,7 @@ const App = () => {
 
 
 
-  const addData = async (newData) => {
+  async function addData(newData) {
     try {
       const sendData = JSON.stringify({
         records: [
@@ -61,30 +61,29 @@ const App = () => {
           Authorization: "Bearer keyVGaLEBQlbn0svE",
           'Content-Type': 'application/json'
         }
-      }
+      };
 
-      setPostLoading(true)
+      setPostLoading(true);
       const response = await axios.post(
         "https://api.airtable.com/v0/appWHzrQEhVGSEqCh/Projects",
         sendData,
         config
       );
 
-      const responseData = response.data.records[0]
+      const responseData = response.data.records[0];
       const fixData = {
         id: responseData.id,
         name: responseData.fields.name,
         description: responseData.fields.description,
         nominal: responseData.fields.nominal,
         type: responseData.fields.type,
-
-      }
+      };
 
       setData([...data, fixData]);
     } catch (error) {
-      console.log(error)
+      console.log(error);
     } finally {
-      setPostLoading(false)
+      setPostLoading(false);
     }
 
   }
