@@ -43,7 +43,7 @@ const App = () => {
 
   useEffect(() => {
     getDataFromAirTable();
-  }, [])
+  }, []);
 
 
 
@@ -125,7 +125,7 @@ const App = () => {
           <div className="d-flex justify-content-center align-items-center">
             <img
               src="/invoices.svg"
-              alt="image"
+              alt="gambar"
               style={{
                 objectFit: "scale-down",
                 width: "15rem"
