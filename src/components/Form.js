@@ -1,114 +1,158 @@
-import React from 'react'
+import axios from "axios";
+import { useState, useEffect } from "react";
 
-import { useState } from 'react'
-import Loading from './Loading';
+import Form from "./components/Form";
+import List from "./components/List";
 
-const Form = ({ addData, postLoading }) => {
+const App = () => {
+    const [data, setData] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [postLoading, setPostLoading] = useState(false);
 
-    const [type, setType] = useState("");
-    const [form, setForm] = useState({
-        name: "",
-        description: "",
-        nominal: "0"
-    });
-    const onChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value })
-    }
+    const getDataFromAirtable = async () => {
+        try {
+            const config = {
+                headers: {
+                    Authorization: "Bearer keyypqamqJeMsMYDr",
+                },
+            };
 
-    const { name, description, nominal } = form;
+            setLoading(true);
+            const response = await axios.get(
+                "https://api.airtable.com/v0/appdG4DM9ho53CyLN/Table%201?maxRecords=100&view=Grid%20view",
+                config
+            );
 
-    const clearForm = () => {
-        setType("");
-        setForm({
-            name: "",
-            description: "",
-            nominal: "0"
-        });
-    }
+            const newData = response.data.records.map((item) => ({
+                id: item.id,
+                name: item.fields.name,
+                description: item.fields.description,
+                nominal: item.fields.nominal,
+                type: item.fields.type,
+            }));
 
-    const onSubmit = (e) => {
-        e.preventDefault()
-        addData({
-            name,
-            description,
-            type,
-            nominal: +nominal,
-            createdAt: new Date().toISOString(),
-        })
+            setData(newData);
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        clearForm();
-    }
+    useEffect(() => {
+        getDataFromAirtable();
+    }, []);
 
-    const typeString =
-        type === "Expense" ? " Pengeluaran" : type === "Income" ? " Pemasukan" : "";
+    const addData = async (newData) => {
+        try {
+            const sendData = JSON.stringify({
+                records: [
+                    {
+                        fields: newData,
+                    },
+                ],
+            });
+
+            const config = {
+                headers: {
+                    Authorization: "Bearer keyypqamqJeMsMYDr",
+                    "Content-Type": "application/json",
+                },
+            };
+
+            setPostLoading(true);
+
+            const response = await axios.post(
+                "https://api.airtable.com/v0/appdG4DM9ho53CyLN/Table%201",
+                sendData,
+                config
+            );
+
+            const responseData = response.data.records[0];
+            const fixData = {
+                id: responseData.id,
+                name: responseData.fields.name,
+                description: responseData.fields.description,
+                nominal: responseData.fields.nominal,
+                type: responseData.fields.type,
+            };
+
+            setData([...data, fixData]);
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setPostLoading(false);
+        }
+    };
+
+    const removeData = async (id) => {
+        try {
+            const axiosParams = {
+                method: "delete",
+                url: `https://api.airtable.com/v0/appdG4DM9ho53CyLN/Table%201/${id}`,
+                headers: {
+                    Authorization: "Bearer keyypqamqJeMsMYDr",
+                    "Content-Type": "application/json",
+                },
+            };
+
+            setLoading(true);
+
+            await axios(axiosParams);
+
+            const newData = data.filter((item) => item.id !== id);
+
+            setData(newData);
+            alert("berhasil deleted data");
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
-        <div className='col-4'>
-            <form className='px-2 py-2' onSubmit={onSubmit}>
-                <div className='form-group mb-1'>
-                    <label>Pilih Type</label>
-                    <select
-                        className='form-control'
-                        value={type}
-                        onChange={(e) => setType(e.target.value)}
-                    >
-                        <option value="">Pilih type</option>
-                        <option value="income">Pemasukan</option>
-                        <option value="expense">Pengeluaran</option>
-                    </select>
+        <div
+            className="d-flex justify-content-center align-items-center"
+            style={{
+                minHeight: "100vh",
+            }}
+        >
+            <div className="container text-white">
+                <div className="row mb-4 ">
+                    <h1 className="text-center mb-3">Aplikasi Tracking Keuangan</h1>
+                    <h2 className="text-center mb-4">Bersama Tahu Coding</h2>
+                    <div className="d-flex justify-content-center align-items-center">
+                        <img
+                            src="/image.svg"
+                            alt="just-gambar"
+                            style={{
+                                objectFit: "scale-down",
+                                width: "15rem",
+                            }}
+                        />
+                    </div>
                 </div>
-
-                <div className='form-group mb-1'>
-                    <label >
-                        Nama {typeString}
-                    </label>
-                    <input
-                        name="name"
-                        value={name}
-                        onChange={onChange}
-                        type="text"
-                        className='form-control'
-                        placeholder={`Nama Dari ${typeString}`}
-                        disabled={!type}
+                <div className="row mt-3 ">
+                    <List
+                        data={data}
+                        type="income"
+                        bg="primary"
+                        removeData={removeData}
+                        loading={loading}
+                    />
+                    <Form addData={addData} postLoading={postLoading} />
+                    <List
+                        data={data}
+                        type="expense"
+                        bg="success"
+                        removeData={removeData}
+                        loading={loading}
                     />
                 </div>
+            </div>
+        </div>
+    );
+};
 
-                <div className='form-group mb-1'>
-                    <label >Descripsi</label>
-                    <textarea
-                        name="description"
-                        value={description}
-                        onChange={onChange}
-                        className='form-control'
-                        placeholder={`Inputkan deskripsi ${typeString}`}
-                        disabled={!type}
-                    ></textarea>
-                </div>
-
-                <div className='form-group mb-1'>
-                    <label >Nominal</label>
-                    <input
-                        name="nominal"
-                        value={nominal}
-                        onChange={onChange}
-                        type="number"
-                        className='form-control'
-                        placeholder={`Inputkan Nominal ${typeString}`}
-                        disabled={!type}
-                    />
-                </div>
-
-                <div className='form-group mb-1 mt-3'>
-                    <button
-                        className='btn btn-primary w-100'
-                        disabled={!type || postLoading}
-                    >
-                        Simpan {postLoading && <Loading />}</button>
-                </div>
-
-            </form >
-        </div >
-    )
-}
-
-export default Form
+export default App;
