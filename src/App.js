@@ -32,7 +32,7 @@ const App = () => {
         }
       ))
 
-      setData(...data, newData)
+      setData(newData)
     } catch (error) {
       console.log(error)
     } finally {
